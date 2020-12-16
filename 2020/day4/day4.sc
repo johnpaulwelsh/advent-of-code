@@ -96,7 +96,7 @@ object Day4 {
   def main(args: Array[String]) {
     val inputList = Source.fromFile("day4input.txt").getLines.toList
 
-    val passportList = combinePassportRows(inputList) //260
+    val passportList = combinePassportRows(inputList)
 
     val isValidListPartOne = passportList.map(isValidPassportPartOne(_))
     println("Part 1 = " + isValidListPartOne.count(_ == true)) //222
@@ -105,6 +105,6 @@ object Day4 {
     val validPassportList = passportList.filter(isValidPassportPartOne(_) == true)
     val passportObjList = validPassportList.map(parsePassport(_))
     val isValidListPartTwo = passportObjList.map(isValidPassportPartTwo(_))
-    println("Part 2 = " + isValidListPartTwo.count(_ == true)) //???
+    println("Part 2 = " + isValidListPartTwo.count(_ == true)) //140
   }
 }
