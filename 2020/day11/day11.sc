@@ -33,9 +33,13 @@ object Day11 {
          Tuple2(i + 1, j + 1))
   }
 
+  def findVisibleSeatIdxs(i: Int, j: Int, a: Array[Array[Char]]): List[Tuple2[Int, Int]] = {
+    //
+  }
+
   def getFinalOccupiedSeats(arr: Array[Array[Char]]): Int = {
 
-    def adjacentsRules(i: Int, j: Int, a: Array[Array[Char]]): Char = {
+    def adjacentsRulesPart1(i: Int, j: Int, a: Array[Array[Char]]): Char = {
       val adjSeatIdxs = getTupleList(i, j)
       val adjSeats = adjSeatIdxs.map(p => findAdjacentSeat(p._1, p._2, a))
       val currSeat = a(i)(j)
@@ -46,10 +50,22 @@ object Day11 {
       else                                                            currSeat
     }
 
+    def adjacentsRulesPart2(i: Int, j: Int, a: Array[Array[Char]]): Char = {
+      // val adjSeatIdxs = getTupleList(i, j)
+      val adjSeats = adjSeatIdxs.map(p => findAdjacentSeat(p._1, p._2, a))
+      val currSeat = a(i)(j)
+      val surroundingFilledSeats = adjSeats.filter(_ == '#')
+
+      if (currSeat == 'L' && (surroundingFilledSeats).size == 0)      '#'
+      else if (currSeat == '#' && (surroundingFilledSeats).size >= 5) 'L'
+      else                                                            currSeat
+    }
+
     def applyRules(grid: Array[Array[Char]]): Array[Array[Char]] = {
       val rowLength = grid(0).length
       (for (i <- 0 until grid.length; j <- 0 until rowLength)
-        yield adjacentsRules(i, j, grid)
+        // yield adjacentsRulesPart1(i, j, grid)
+        yield adjacentsRulesPart2(i, j, grid)
       ).toArray.grouped(rowLength).toArray
     }
 
