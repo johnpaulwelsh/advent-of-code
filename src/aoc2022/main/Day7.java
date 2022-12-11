@@ -4,24 +4,39 @@ import src.aoc2022.main.Pojos.File;
 import src.aoc2022.main.Pojos.Folder;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Day7 {
 
     public static final int maxFolderSize = 100000;
+    public static int totalUsedSpace;
+    public static final int requiredUnusedSpace = 30000000;
+    public static final String CD = "$ cd";
+    public static final String LS = "$ ls";
+    public static final String DIR = "dir";
+    public static final String DOTDOT = "..";
+    public static final String SPACE = " ";
 
     public static Folder constructFileSystemTree(List<String> inputList) {
         Folder root = new Folder("/");
         Folder currentFolder = root;
 
         for (String row : inputList) {
-            if (row.contains("$ cd")) {
-                String[] split = row.split(" ");
+            if (row.contains(CD)) {
+                String[] split = row.split(SPACE);
                 String folderName = split[split.length - 1];
 
                 if (folderName.equals(root.getName())) {
                     continue;
-                }else if (folderName.equals("..")) {
+
+                }else if (folderName.equals(DOTDOT)) {
                     currentFolder = currentFolder.getParentFolder();
+
+                } else if (currentFolder.containsSubfolderByName(folderName)) {
+                    Folder prevCurrent = currentFolder;
+                    currentFolder = currentFolder.getSubfolderByName(folderName);
+                    currentFolder.setParentFolder(prevCurrent);
+
                 } else {
                     Folder next = new Folder(folderName);
                     currentFolder.addSubfolder(next);
@@ -29,59 +44,49 @@ public class Day7 {
                     currentFolder = next;
                 }
 
-            } else if (row.contains("$ ls")) {
+            } else if (row.contains(LS)) {
                 continue;
 
-            } else if (row.contains("dir")) {
-                String[] split = row.split(" ");
+            } else if (row.contains(DIR)) {
+                String[] split = row.split(SPACE);
                 String folderName = split[split.length-1];
 
                 currentFolder.addSubfolder(new Folder(folderName));
 
             } else {
-                String[] split = row.split(" ");
+                String[] split = row.split(SPACE);
                 String fileSize = split[0];
                 String fileName = split[split.length-1];
 
                 currentFolder.addFile(new File(fileName, Integer.parseInt(fileSize)));
             }
 
-//            System.out.println("Current folder = " + currentFolder.getName() + ",\n"
-//                + "parent folder = " + ((currentFolder.getParentFolder() != null) ? currentFolder.getParentFolder().getName() : null) + ",\n"
-//                + "current folder's children files = " + currentFolder.getFiles().stream().map(File::getName).collect(Collectors.joining(",")) + ",\n"
-//                + "current folder's children folders = " + currentFolder.getSubfolders().stream().map(Folder::getName).collect(Collectors.joining(","))
+//            System.out.println(
+//                row + ";\n"
+//                + "current folder = " + currentFolder.getName()
+//                + " => " + currentFolder.getFiles().stream().map(File::getName).collect(Collectors.joining(","))
+//                + " {" + currentFolder.getSubfolders().stream().map(Folder::getName).collect(Collectors.joining("},{")) + "}"
 //            );
-//            System.out.println("--------------------");
+//            System.out.println("--------------");
         }
         return root;
     }
 
     public static void recursivelyCalculateSizes(Folder f) {
+        int sumOfChildFiles = f.getFiles().stream().map(File::getSize).mapToInt(i -> i).sum();
+        f.addToSumOfAllChildElements(sumOfChildFiles);
+//        System.out.println("folder {" + f.getName() + "} has sum " + sumOfChildFiles);
+
         if (f.getSubfolders().isEmpty()) {
-            int sum = f.getFiles().stream().map(File::getSize).mapToInt(i -> i).sum();
-            f.addToSumOfAllChildElements(sum);
-
-            if (f.getParentFolder() != null) {
-                f.getParentFolder().addToSumOfAllChildElements(f.getSumOfAllChildElements());
-            }
-
-//            System.out.println("folder = {" + f.getName() + "}"
-//                    + " files = [" + f.getFiles().stream()
-//                    .map(File::getName)
-//                    .collect(Collectors.joining(",")) + "]"
-//                    + " have sum " + sum
-//            );
-
-//            if (f.getParentFolder() != null) {
-//                System.out.println("    parent folder = {" + f.getParentFolder().getName() + "} "
-//                        + "has sum " + f.getParentFolder().getSumOfAllChildElements());
-//            }
+//            System.out.println("at the bottom of DFS, folder {" + f.getName() + "} has sum " + sumOfChildFiles);
         } else {
-            int sum = f.getFiles().stream().map(File::getSize).mapToInt(i -> i).sum();
-            f.addToSumOfAllChildElements(sum);
+            int sumOfChildFolders = 0;
             for (Folder sub : f.getSubfolders()) {
                 recursivelyCalculateSizes(sub);
+                sumOfChildFolders += sub.getSumOfAllChildElements();
             }
+            f.addToSumOfAllChildElements(sumOfChildFolders);
+//            System.out.println("after recursion unrolled, folder {" + f.getName() + "} has sum " + sumOfChildFolders);
         }
     }
 
@@ -90,7 +95,6 @@ public class Day7 {
         int cappedSum = (currentFolderSum > maxFolderSize) ? 0 : currentFolderSum;
 
         if (f.getSubfolders().isEmpty()) {
-//            System.out.println("folder {" + f.getName() + "} has sum " + cappedSum);
             return cappedSum;
         } else {
             int runningSum = cappedSum;
@@ -101,6 +105,22 @@ public class Day7 {
         }
     }
 
+    public static boolean isFolderWorthDeleting(Folder f) {
+        return (totalUsedSpace - f.getSumOfAllChildElements() <= requiredUnusedSpace);
+    }
+
+    public static Folder smallestSubfolderWorthDeleting(Folder currentRoot, Folder smallestThatWorks) {
+        if (currentRoot.getSubfolders().isEmpty()) {
+            smallestThatWorks = (isFolderWorthDeleting(currentRoot)) ? currentRoot : smallestThatWorks;
+            return smallestThatWorks;
+        } else {
+            for (Folder sub : currentRoot.getSubfolders()) {
+                smallestThatWorks = smallestSubfolderWorthDeleting(sub, smallestThatWorks);
+            }
+            return smallestThatWorks;
+        }
+    }
+
     public static void main(String[] args) {
         List<String> inputList = Utilities.readFileInList(
                 "/Users/johnpaulwelsh/Documents/advent-of-code/src/aoc2022/resources/day7input.txt");
@@ -108,17 +128,21 @@ public class Day7 {
         // 1. construct an object-oriented representation of the file system
         Folder root = constructFileSystemTree(inputList);
 
-        System.out.println("-------------------");
-
-        // 2. recursively iterate down each path, collecting cumulative sizes along the way and storing it in the
-        // folder's object (so object for folder A will contain the sum of all files in all subfolders of A)
+        // 2. recursively iterate down each path, collecting cumulative sizes along the way
+        // and storing it in the folder's object (so object for folder A will contain the
+        // sum of all files in all subfolders of A)
         recursivelyCalculateSizes(root);
 
-        System.out.println("-------------------");
-
         // 3. sum the folder sizes that are <= 100000
-        System.out.println("answer 1 = " + collectFolderSizesUnderCertainMax(root)); //1285231, too high
+        System.out.println("answer 1 = " + collectFolderSizesUnderCertainMax(root));
+
+        totalUsedSpace = root.getSumOfAllChildElements();
+
+        Folder toDelete = smallestSubfolderWorthDeleting(root, root);
+
+        System.out.println("answer 2 = "
+                + toDelete.getName()
+                + " with size "
+                + toDelete.getSumOfAllChildElements()); // folder / too high: 47052440
     }
-
-
 }

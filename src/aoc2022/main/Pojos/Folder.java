@@ -2,6 +2,7 @@ package src.aoc2022.main.Pojos;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Folder extends TreeNode {
     private final List<File> files;
@@ -47,6 +48,20 @@ public class Folder extends TreeNode {
 
     public void setParentFolder(Folder f) {
         this.parentFolder = f;
+    }
+
+    public boolean containsSubfolderByName(String queryName) {
+        return (subfolders.stream().anyMatch(f -> f.name.equals(queryName)));
+    }
+
+    public Folder getSubfolderByName(String queryName) {
+        List<Folder> filteredSubfolders = subfolders.stream().filter(f -> f.name.equals(queryName)).collect(Collectors.toList());
+        if (filteredSubfolders.size() > 1) {
+            System.err.println("too many folder found, there are already duplicates!");
+            return null;
+        } else {
+            return filteredSubfolders.get(0);
+        }
     }
 
 }
