@@ -1,15 +1,17 @@
 package src.aoc2022.main;
 
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Day5 {
 
+    static ArrayList<String> brackets = new ArrayList<>(Arrays.asList("[","]"));
+    static ArrayList<String> digits = new ArrayList<>(Arrays.asList("0","1","2","3","4","5","6","7","8","9"));
+
     static class Instruction {
-        private int count;
-        private int sourceStack;
-        private int destinationStack;
+        private final int count;
+        private final int sourceStack;
+        private final int destinationStack;
 
         public Instruction(int count, int sourceStack, int destinationStack) {
             this.count = count;
@@ -17,82 +19,118 @@ public class Day5 {
             this.destinationStack = destinationStack;
         }
 
-        public int getCount() {
-            return count;
-        }
-
-        public int getSourceStack() {
-            return sourceStack;
-        }
-
-        public int getDestinationStack() {
-            return destinationStack;
-        }
-
         public String toString() {
-            return "count=" + count + ",sourceStack="+sourceStack+",destinationStack"+destinationStack;
+            return "count="+count+",sourceStack="+sourceStack+",destinationStack"+destinationStack;
         }
     }
 
-    public static void transposeDiagram(List<List<String>> stackDiagram) {
-        // reverse everything to put the column numbers on top instead of on bottom
-        Collections.reverse(stackDiagram);
-
-        System.out.println("reversed..........");
-        for (List<String> row : stackDiagram) {
-            System.out.println(row);
-        }
-
+    // make every row the same length, right-padding with spaces as needed
+    public static void makeAllRowsEqualLength(List<List<String>> stackDiagram) {
         int maxColumnCount = 0;
         for (List<String> row : stackDiagram) {
             maxColumnCount = Math.max(maxColumnCount, row.size());
         }
 
-        // make every row the same length, right-padding with spaces as needed
         for (List<String> row : stackDiagram) {
             while (row.size() < maxColumnCount) {
                 row.add(" ");
             }
         }
+    }
 
-        for (List<String> row : stackDiagram) {
-            System.out.println(row);
+    public static List<List<String>> transposeDiagram(List<List<String>> stackDiagram) {
+        // reverse everything to put the column numbers on top instead of on bottom
+        Collections.reverse(stackDiagram);
+
+        makeAllRowsEqualLength(stackDiagram);
+
+        //https://stackoverflow.com/questions/5190419/transposing-values-in-java-2d-arraylist
+        // flip it on its side (transpose)
+        int rowLength = stackDiagram.size();
+        int columnLength = stackDiagram.get(0).size();
+        String[][] transposedDiagram = new String[columnLength][rowLength];
+
+        for(int i = 0; i < rowLength; i++) {
+            for(int j = 0; j < columnLength; j++) {
+                transposedDiagram[j][i] = stackDiagram.get(i).get(j);
+            }
         }
 
-        // first row (after reversal) gives you the label of each stack
-        // I happen to know it only goes up to 9 as a max, so we can just count the non-space chars
+        List<List<String>> transposedUnfiltered = new ArrayList<>();
+        for (String[] strings : transposedDiagram) {
+            ArrayList<String> innerList = new ArrayList<>(Arrays.asList(strings));
+            transposedUnfiltered.add(innerList);
+        }
 
+        // get rid of the rows that are entirely spaces
+        // and get rid of the rows that contain brackets
+        // (not every element will contain a bracket because of the space regulation above)
+        List<List<String>> transposedFiltered = transposedUnfiltered.stream()
+                .filter(row -> row.stream().noneMatch(brackets::contains))
+                .filter(row -> row.stream().anyMatch(digits::contains))
+                .collect(Collectors.toList());
 
-        // get rid of the columns that are entirely spaces
+        System.out.println("filtered...");
+        for (List<String> row : transposedFiltered) {
+            System.out.println(String.join("", row));
+        }
 
-        // get rid of the columns with brackets
+        return transposedFiltered;
+    }
 
+    public static void removeSpacesFromTopOfStacks(List<Stack<String>> stacks) {
+        for (Stack<String> stack : stacks) {
+            while (stack.peek().equals(" ")) {
+                stack.pop();
+            }
+//            System.out.println("stack = " + String.join("", stack));
+        }
+    }
 
-//        List<List<String>> transposedDiagram = new ArrayList<>(maxColumnCount);
+    public static void followInstructions9000(List<Stack<String>> stacks, List<Instruction> instructions) {
+        for (Instruction inst : instructions) {
+            Stack<String> sourceStack = stacks.get(inst.sourceStack-1);
+            Stack<String> destStack = stacks.get(inst.destinationStack-1);
+            for (int i = 0; i < inst.count; i++) {
+                destStack.push(sourceStack.pop());
+            }
+        }
+    }
 
+    public static void followInstructions9001(List<Stack<String>> stacks, List<Instruction> instructions) {
+        for (Instruction inst : instructions) {
+            Stack<String> sourceStack = stacks.get(inst.sourceStack-1);
+            Stack<String> destStack = stacks.get(inst.destinationStack-1);
+            Stack<String> multiGrab = new Stack<>();
+            for (int i = 0; i < inst.count; i++) {
+                multiGrab.push(sourceStack.pop());
+            }
+            for (int i = 0; i < inst.count; i++) {
+                destStack.push(multiGrab.pop());
+            }
+        }
     }
 
     public static void main(String[] args) {
         List<String> inputList = Utilities.readFileInList(
-                "/Users/johnpaulwelsh/Documents/advent-of-code/src/aoc2022/resources/day5input-sample.txt");
+                "/Users/johnpaulwelsh/Documents/advent-of-code/src/aoc2022/resources/day5input.txt");
 
         List<List<String>> stackDiagram = new ArrayList<>();
 
         int i = 0;
         while (i < inputList.size() && !inputList.get(i).isEmpty()) {
-            List<String> splitRow = Arrays.asList(inputList.get(i).split(""));
-            stackDiagram.add(splitRow);
+            String[] split = inputList.get(i).split("");
+            ArrayList<String> ls = new ArrayList<>(Arrays.asList(split));
+            stackDiagram.add(ls);
             i++;
         }
 
-        for (List<String> row : stackDiagram) {
-            System.out.println(row);
-        }
+        List<List<String>> transposedDiagram = transposeDiagram(stackDiagram);
 
-        transposeDiagram(stackDiagram);
-
+        // Move past the blank line that separates diagram from instructions
         inputList = inputList.subList(i+1, inputList.size());
 
+        // collect instructions
         i = 0;
         List<String> instructions = new ArrayList<>();
         while (i < inputList.size()) {
@@ -113,10 +151,24 @@ public class Day5 {
             System.out.println(inst);
         }
 
-//        followInstructions(stacks, instructionObjects);
+        List<Stack<String>> stacks = new ArrayList<>();
+        for (List<String> row : transposedDiagram) {
+            Stack<String> currStack = new Stack<>();
+            for (String elem : row) {
+                currStack.push(elem);
+            }
+            stacks.add(currStack);
+        }
 
-//        String topsOfStacks = stacks.stream().map(Stack::peek).collect(Collectors.joining());
+        removeSpacesFromTopOfStacks(stacks);
 
-//        System.out.println("answer 1  = " + topsOfStacks);
+//        followInstructions9000(stacks, instructionObjects);
+        followInstructions9001(stacks, instructionObjects);
+
+        String topsOfStacks = stacks.stream().map(Stack::peek).collect(Collectors.joining());
+
+        System.out.println("answer = {" + topsOfStacks + "}");
+        // pt 1 = JDTMRWCQJ
+        // pt 2 = VHJDDCWRD
     }
 }
