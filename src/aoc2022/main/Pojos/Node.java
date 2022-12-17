@@ -1,6 +1,6 @@
 package src.aoc2022.main.Pojos;
 
-public class TreeNode {
+public class Node {
     String name;
 
     public String getName() {

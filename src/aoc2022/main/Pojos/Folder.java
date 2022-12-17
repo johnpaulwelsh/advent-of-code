@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Folder extends TreeNode {
+public class Folder extends Node {
     private final List<File> files;
     private final List<Folder> subfolders;
     private int sumOfAllChildElements;
@@ -64,4 +64,7 @@ public class Folder extends TreeNode {
         }
     }
 
+    public String toString() {
+        return "{" + name + "} == " + sumOfAllChildElements;
+    }
 }
