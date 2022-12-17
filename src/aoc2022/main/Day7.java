@@ -3,7 +3,7 @@ package src.aoc2022.main;
 import src.aoc2022.main.Pojos.File;
 import src.aoc2022.main.Pojos.Folder;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Day7 {
@@ -16,6 +16,9 @@ public class Day7 {
     public static final String DIR = "dir";
     public static final String DOTDOT = "..";
     public static final String SPACE = " ";
+
+    public static final Comparator<Folder> folderSizeComparator =
+        Comparator.comparing(Folder::getSumOfAllChildElements);
 
     public static Folder constructFileSystemTree(List<String> inputList) {
         Folder root = new Folder("/");
@@ -75,10 +78,10 @@ public class Day7 {
     public static void recursivelyCalculateSizes(Folder f) {
         int sumOfChildFiles = f.getFiles().stream().map(File::getSize).mapToInt(i -> i).sum();
         f.addToSumOfAllChildElements(sumOfChildFiles);
-//        System.out.println("folder {" + f.getName() + "} has sum " + sumOfChildFiles);
+        System.out.println("folder {" + f.getName() + "} has sum " + sumOfChildFiles);
 
         if (f.getSubfolders().isEmpty()) {
-//            System.out.println("at the bottom of DFS, folder {" + f.getName() + "} has sum " + sumOfChildFiles);
+            System.out.println("at the bottom of DFS, folder {" + f.getName() + "} has sum " + sumOfChildFiles);
         } else {
             int sumOfChildFolders = 0;
             for (Folder sub : f.getSubfolders()) {
@@ -86,7 +89,7 @@ public class Day7 {
                 sumOfChildFolders += sub.getSumOfAllChildElements();
             }
             f.addToSumOfAllChildElements(sumOfChildFolders);
-//            System.out.println("after recursion unrolled, folder {" + f.getName() + "} has sum " + sumOfChildFolders);
+            System.out.println("after recursion unrolled, folder {" + f.getName() + "} has sum " + sumOfChildFolders);
         }
     }
 
@@ -109,40 +112,54 @@ public class Day7 {
         return (totalUsedSpace - f.getSumOfAllChildElements() <= requiredUnusedSpace);
     }
 
-    public static Folder smallestSubfolderWorthDeleting(Folder currentRoot, Folder smallestThatWorks) {
+    public static Set<Folder> collectAllFoldersRecursive(Folder currentRoot, Set<Folder> accum) {
+        accum.add(currentRoot);
+
         if (currentRoot.getSubfolders().isEmpty()) {
-            smallestThatWorks = (isFolderWorthDeleting(currentRoot)) ? currentRoot : smallestThatWorks;
-            return smallestThatWorks;
+            return accum;
         } else {
+            Set<Folder> recursiveAccum = new HashSet<>();
             for (Folder sub : currentRoot.getSubfolders()) {
-                smallestThatWorks = smallestSubfolderWorthDeleting(sub, smallestThatWorks);
+                recursiveAccum.addAll(collectAllFoldersRecursive(sub, accum));
             }
-            return smallestThatWorks;
+            return recursiveAccum;
         }
+    }
+
+    public static Set<Folder> collectAllFoldersAndSizes(Folder f) {
+        return collectAllFoldersRecursive(f, new HashSet<>());
     }
 
     public static void main(String[] args) {
         List<String> inputList = Utilities.readFileInList(
                 "/Users/johnpaulwelsh/Documents/advent-of-code/src/aoc2022/resources/day7input.txt");
 
-        // 1. construct an object-oriented representation of the file system
+        // construct an object-oriented representation of the file system
         Folder root = constructFileSystemTree(inputList);
 
-        // 2. recursively iterate down each path, collecting cumulative sizes along the way
+        // recursively iterate down each path, collecting cumulative sizes along the way
         // and storing it in the folder's object (so object for folder A will contain the
         // sum of all files in all subfolders of A)
         recursivelyCalculateSizes(root);
 
-        // 3. sum the folder sizes that are <= 100000
+        // sum the folder sizes that are <= 100000
         System.out.println("answer 1 = " + collectFolderSizesUnderCertainMax(root));
 
         totalUsedSpace = root.getSumOfAllChildElements();
 
-        Folder toDelete = smallestSubfolderWorthDeleting(root, root);
+        Set<Folder> allFolders = collectAllFoldersAndSizes(root);
+//        allFolders.forEach(System.out::println);
+
+        List<Folder> candidatesForDeletion = allFolders.stream()
+                .filter(Day7::isFolderWorthDeleting)
+                .sorted(folderSizeComparator)
+                .collect(Collectors.toList());
 
         System.out.println("answer 2 = "
-                + toDelete.getName()
+                + candidatesForDeletion.get(0)
                 + " with size "
-                + toDelete.getSumOfAllChildElements()); // folder / too high: 47052440
+                + candidatesForDeletion.get(0).getSumOfAllChildElements());
+        // folder / too high: 47052440
+        // folder vpfdwq too high: 17348139
     }
 }
