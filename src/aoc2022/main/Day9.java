@@ -7,8 +7,8 @@ import java.util.List;
 
 public class Day9 {
 
-    private static RopeGrid createGridWithAppropriateDimensions(List<String> inputList) throws Exception {
-        int left = 0, right = 0, up = 0, down = 0;
+    private static RopeGrid createGridWithAppropriateDimensions(List<String> inputList, int knotCount) throws Exception {
+        int left = knotCount, right = knotCount, up = knotCount, down = knotCount;
         for (String instruction : inputList) {
             String[] split = instruction.split(" ");
             Direction direction = Direction.valueOf(split[0]);
@@ -30,7 +30,12 @@ public class Day9 {
             }
         }
 
-        return new RopeGrid(Math.abs(left + right), Math.abs(up + down));
+        int columns = Math.abs(left + right);
+        int rows = Math.abs(up + down);
+
+//        System.out.println("making a grid with " + columns + " columns and " + rows + " rows");
+
+        return new RopeGrid(columns, rows, knotCount);
     }
 
     private static void followInstructionsOnGrid(List<String> inputList, RopeGrid grid) throws Exception {
@@ -38,7 +43,7 @@ public class Day9 {
             String[] split = instruction.split(" ");
             Direction direction = Direction.valueOf(split[0]);
             int stepCount = Integer.parseInt(split[1]);
-            grid.moveHeadNSpacesInDirectionAndMakeTailFollow(direction, stepCount);
+            grid.moveHeadNSpacesInDirectionAndMakeRestOfRopeFollow(direction, stepCount);
         }
     }
 
@@ -46,10 +51,12 @@ public class Day9 {
         List<String> inputList = Utilities.readFileInList(
                 "/Users/johnpaulwelsh/Documents/advent-of-code/src/aoc2022/resources/day9input.txt");
 
-        RopeGrid grid = createGridWithAppropriateDimensions(inputList);
-
+        RopeGrid grid = createGridWithAppropriateDimensions(inputList, 2);
         followInstructionsOnGrid(inputList, grid);
-
         System.out.println("answer 1 = " + grid.countSpacesThatTailVisited());
+
+        RopeGrid grid2 = createGridWithAppropriateDimensions(inputList, 10);
+        followInstructionsOnGrid(inputList, grid2);
+        System.out.println("answer 2 = " + grid2.countSpacesThatTailVisited());
     }
 }
