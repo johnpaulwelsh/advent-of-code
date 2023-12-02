@@ -55,13 +55,25 @@ public class Day2 {
         List<String> list = Utilities.readFileInList(
                 "/Users/johnpaulwelsh/Documents/advent-of-code/src/aoc2023/resources/day2input.txt");
 
+        int maxRed = 12;
+        int maxBlue = 14;
+        int maxGreen = 13;
         List<CubeDrawGame> cdgList = constructCubeDrawGameList(list);
-        List<CubeDrawGame> cdgListWhichAllowCubeCounts = findGamesWhichAllowTheseCubeCounts(cdgList, 12, 14, 13);
+        List<CubeDrawGame> cdgListWhichAllowCubeCounts = findGamesWhichAllowTheseCubeCounts(cdgList, maxRed, maxBlue, maxGreen);
         int sumGameIdsWhichAllowCubeCounts = cdgListWhichAllowCubeCounts.stream()
                 .map(CubeDrawGame::getGameId)
                 .reduce(0, Integer::sum);
         System.out.println("Solution to part 1 = " + sumGameIdsWhichAllowCubeCounts);
 
+        List<Integer> maxRedsShownAtOnce = cdgList.stream().map(CubeDrawGame::maxRedsShownAtOnce).collect(Collectors.toList());
+        List<Integer> maxBluesShownAtOnce = cdgList.stream().map(CubeDrawGame::maxBluesShownAtOnce).collect(Collectors.toList());
+        List<Integer> maxGreensShownAtOnce = cdgList.stream().map(CubeDrawGame::maxGreensShownAtOnce).collect(Collectors.toList());
 
+        int sumOfProducts = 0;
+        for (int i = 0; i < maxRedsShownAtOnce.size(); i++) {
+            sumOfProducts += maxRedsShownAtOnce.get(i) * maxBluesShownAtOnce.get(i) * maxGreensShownAtOnce.get(i);
+        }
+
+        System.out.println("Solution to part 2 = " + sumOfProducts);
     }
 }
